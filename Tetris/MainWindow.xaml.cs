@@ -13,6 +13,10 @@ namespace Tetris;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private const int MaxDelay = 500;
+    private const int MinDelay = 100;
+    private const int DelayStep = 25;
+
     private readonly ImageSource[] _blockImages =
     {
         new BitmapImage(new Uri("Assets/Block-Empty.png", UriKind.Relative)),
@@ -53,6 +57,7 @@ public partial class MainWindow : Window
         for (var j = 0; j < gameGrid.Columns; j++)
         {
             var id = gameGrid[i, j];
+            _imageControls[i, j].Opacity = 1;
             _imageControls[i, j].Source = _tileImages[id];
         }
     }
@@ -60,12 +65,16 @@ public partial class MainWindow : Window
     private void DrawBlock(Block block)
     {
         foreach (var position in block.TilePositions())
+        {
+            _imageControls[position.Row, position.Column].Opacity = 1;
             _imageControls[position.Row, position.Column].Source = _tileImages[block.Id];
+        }
     }
 
     private void Draw(GameState gameState)
     {
         DrawGrid(gameState.GameGrid);
+        DrawDropGhost(gameState.CurrentBlock);
         DrawBlock(gameState.CurrentBlock);
         DrawNextBlock(gameState.BlockQueue);
         DrawHeldBlock(gameState.HeldBlock);
@@ -107,7 +116,8 @@ public partial class MainWindow : Window
 
         while (!_gameState.GameOver)
         {
-            await Task.Delay(500);
+            var delay = Math.Max(MinDelay, MaxDelay - _gameState.Score * DelayStep);
+            await Task.Delay(delay);
             _gameState.MoveDown();
             Draw(_gameState);
         }
@@ -140,10 +150,24 @@ public partial class MainWindow : Window
             case Key.F:
                 _gameState.HoldBlock();
                 break;
+            case Key.Space:
+                _gameState.DropBlock();
+                break;
             default: return;
         }
 
         Draw(_gameState);
+    }
+
+    private void DrawDropGhost(Block block)
+    {
+        var dropDistance = _gameState.BlockDropDistance();
+
+        foreach (var position in block.TilePositions())
+        {
+            _imageControls[position.Row + dropDistance, position.Column].Opacity = 0.3;
+            _imageControls[position.Row + dropDistance, position.Column].Source = _tileImages[block.Id];
+        }
     }
 
     private void DrawHeldBlock(Block? heldBlock)

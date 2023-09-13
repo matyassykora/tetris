@@ -1,4 +1,6 @@
-﻿namespace Tetris;
+﻿using System;
+
+namespace Tetris;
 
 public class GameState
 {
@@ -121,5 +123,29 @@ public class GameState
             CurrentBlock.Move(-1, 0);
             PlaceBlock();
         }
+    }
+
+    public int TileDropDistance(Position p)
+    {
+        var drop = 0;
+
+        while (GameGrid.IsEmpty(p.Row + drop + 1, p.Column)) drop++;
+
+        return drop;
+    }
+
+    public int BlockDropDistance()
+    {
+        var drop = GameGrid.Rows;
+
+        foreach (var position in CurrentBlock.TilePositions()) drop = Math.Min(drop, TileDropDistance(position));
+
+        return drop;
+    }
+
+    public void DropBlock()
+    {
+        CurrentBlock.Move(BlockDropDistance(), 0);
+        PlaceBlock();
     }
 }
